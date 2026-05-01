@@ -18,6 +18,15 @@ interface LiveFeedResult {
     newArticleId: string | null;
 }
 
+function normalizeTimestamp(ts: any) {
+    if (!ts) return ts;
+    if (typeof ts.toDate === "function") return ts;
+    if (typeof ts === "string" || typeof ts === "number") {
+        return { toDate: () => new Date(ts) };
+    }
+    return ts;
+}
+
 /**
  * Primary hook: real-time Firestore listener on `verifications` collection.
  * Falls back to REST polling if Firestore fails.
@@ -45,10 +54,14 @@ export function useLiveFeed(maxArticles = 30): LiveFeedResult {
             unsubscribe = onSnapshot(
                 q,
                 (snapshot) => {
-                    const docs = snapshot.docs.map((doc) => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    }));
+                    const docs = snapshot.docs.map((doc) => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            timestamp: normalizeTimestamp(data.timestamp),
+                        };
+                    });
 
                     // Detect newly added article
                     if (articles.length > 0 && docs.length > 0 && docs[0].id !== articles[0]?.id) {
@@ -84,6 +97,7 @@ export function useLiveFeed(maxArticles = 30): LiveFeedResult {
             const docs = (data.articles || data || []).map((a: any, i: number) => ({
                 id: a.id || `rest-${i}`,
                 ...a,
+                timestamp: normalizeTimestamp(a.timestamp),
             }));
 
             if (articles.length > 0 && docs.length > 0 && docs[0].id !== articles[0]?.id) {

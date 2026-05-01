@@ -18,6 +18,8 @@ Version: 1.0
 import os
 import logging
 from datetime import datetime
+from collections import deque
+from uuid import uuid4
 
 # Load environment variables from .env file
 try:
@@ -124,6 +126,69 @@ async def startup_event():
             logger.info(f"Vocabulary size: {info.get('tfidf_vocab_size', 'unknown')}")
     except Exception as e:
         logger.warning(f"Model not loaded: {e}")
+
+
+# --- Live Feed Cache (REST fallback) ---
+LOCAL_FEED = deque(maxlen=100)
+
+
+def _normalize_confidence(value) -> float:
+    try:
+        conf = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if conf > 1:
+        conf = conf / 100.0
+    return max(0.0, min(1.0, conf))
+
+
+def _normalize_red_flags(flags) -> list:
+    if not flags:
+        return []
+    normalized = []
+    for f in flags:
+        if isinstance(f, dict):
+            normalized.append(f.get("description", str(f)))
+        else:
+            normalized.append(str(f))
+    return normalized
+
+
+def _build_feed_record(
+    verdict: str,
+    text: str,
+    url: str | None,
+    confidence: float | int | None,
+    red_flags: list | None = None,
+    grounded_evidence: str = "",
+    verification_method: str = "",
+) -> dict:
+    return {
+        "id": uuid4().hex,
+        "verdict": verdict,
+        "text": text,
+        "url": url,
+        "timestamp": datetime.utcnow().isoformat(),
+        "confidence": _normalize_confidence(confidence),
+        "red_flags": _normalize_red_flags(red_flags),
+        "grounded_evidence": grounded_evidence or "",
+        "verification_method": verification_method or "",
+    }
+
+
+def _record_live_feed(record: dict) -> None:
+    LOCAL_FEED.appendleft(record)
+
+
+def _map_recommendation_to_verdict(recommendation: str) -> str:
+    rec = (recommendation or "").strip().lower()
+    if rec in {"likely_real", "real", "true", "verified"}:
+        return "REAL"
+    if rec in {"likely_fake", "fake", "false", "misleading"}:
+        return "FAKE"
+    if rec in {"mixed", "questionable", "unverifiable", "needs_verification", "needs verification"}:
+        return "NEEDS VERIFICATION"
+    return recommendation or "NEEDS VERIFICATION"
 
 
 # --- Wikipedia Fact-Check Utility ---
@@ -409,6 +474,17 @@ async def predict(request: NewsRequest):
                 "note": "Verified using Gemini AI with real-time Google Search grounding.",
             }
 
+            feed_record = _build_feed_record(
+                verdict=final_label,
+                text=text,
+                url=None,
+                confidence=final_confidence_pct,
+                red_flags=all_flags,
+                grounded_evidence=grounding_result.get("summary", ""),
+                verification_method="gemini_grounding",
+            )
+            _record_live_feed(feed_record)
+
             logger.info(
                 f"AI-grounded prediction: {final_prediction} "
                 f"(confidence: {final_confidence_pct}%)"
@@ -418,7 +494,13 @@ async def predict(request: NewsRequest):
             if firestore_service:
                 try:
                     await firestore_service.save_verification(
-                        final_label, text, None
+                        final_label,
+                        text,
+                        None,
+                        confidence=feed_record["confidence"],
+                        red_flags=feed_record["red_flags"],
+                        grounded_evidence=feed_record["grounded_evidence"],
+                        verification_method=feed_record["verification_method"],
                     )
                 except Exception as fs_err:
                     logger.warning(f"Firestore save failed: {fs_err}")
@@ -443,6 +525,31 @@ async def predict(request: NewsRequest):
             logger.info(f"Fact-check triggered: {fact_check.get('status')}")
         else:
             fact_check = {"status": "Not required (high confidence)"}
+
+        feed_record = _build_feed_record(
+            verdict=ml_result.get("label", ml_prediction.upper()),
+            text=text,
+            url=None,
+            confidence=ml_confidence_pct,
+            red_flags=ml_result.get("red_flags", []),
+            grounded_evidence=ml_result.get("explanation", ""),
+            verification_method="ml_only",
+        )
+        _record_live_feed(feed_record)
+
+        if firestore_service:
+            try:
+                await firestore_service.save_verification(
+                    feed_record["verdict"],
+                    text,
+                    None,
+                    confidence=feed_record["confidence"],
+                    red_flags=feed_record["red_flags"],
+                    grounded_evidence=feed_record["grounded_evidence"],
+                    verification_method=feed_record["verification_method"],
+                )
+            except Exception as fs_err:
+                logger.warning(f"Firestore save failed: {fs_err}")
 
         return {
             # Primary fields
@@ -636,11 +743,28 @@ async def verify(request: VerifyRequest):
                 f"(score: {final_confidence:.1%})"
             )
 
+            feed_record = _build_feed_record(
+                verdict=final_verdict,
+                text=text,
+                url=request.url,
+                confidence=final_confidence,
+                red_flags=all_flags,
+                grounded_evidence=grounding_result.get("summary", ""),
+                verification_method="gemini_grounding",
+            )
+            _record_live_feed(feed_record)
+
             # Save to Firestore for live feed
             if firestore_service:
                 try:
                     await firestore_service.save_verification(
-                        final_verdict, text, request.url
+                        final_verdict,
+                        text,
+                        request.url,
+                        confidence=feed_record["confidence"],
+                        red_flags=feed_record["red_flags"],
+                        grounded_evidence=feed_record["grounded_evidence"],
+                        verification_method=feed_record["verification_method"],
                     )
                 except Exception as fs_err:
                     logger.warning(f"Firestore save failed: {fs_err}")
@@ -666,14 +790,35 @@ async def verify(request: VerifyRequest):
                 f"score: {result.get('overall_assessment', {}).get('credibility_score', 'N/A')}"
             )
 
+            hybrid_rec = result.get("overall_assessment", {}).get(
+                "recommendation", ""
+            )
+            hybrid_verdict = _map_recommendation_to_verdict(hybrid_rec)
+            hybrid_score = result.get("overall_assessment", {}).get(
+                "credibility_score", 0
+            )
+            feed_record = _build_feed_record(
+                verdict=hybrid_verdict,
+                text=text,
+                url=request.url,
+                confidence=hybrid_score,
+                red_flags=result.get("red_flags", []),
+                grounded_evidence=result.get("evidence_summary", ""),
+                verification_method="hybrid_ml_rules_web",
+            )
+            _record_live_feed(feed_record)
+
             # Save to Firestore for live feed
             if firestore_service:
                 try:
-                    hybrid_verdict = result.get(
-                        "overall_assessment", {}
-                    ).get("recommendation", ml_prediction.upper())
                     await firestore_service.save_verification(
-                        hybrid_verdict, text, request.url
+                        hybrid_verdict,
+                        text,
+                        request.url,
+                        confidence=feed_record["confidence"],
+                        red_flags=feed_record["red_flags"],
+                        grounded_evidence=feed_record["grounded_evidence"],
+                        verification_method=feed_record["verification_method"],
                     )
                 except Exception as fs_err:
                     logger.warning(f"Firestore save failed: {fs_err}")
@@ -705,11 +850,28 @@ async def verify(request: VerifyRequest):
             "error": False,
         }
 
+        feed_record = _build_feed_record(
+            verdict=ml_prediction.upper(),
+            text=text,
+            url=request.url,
+            confidence=ml_confidence,
+            red_flags=ml_only_result.get("red_flags", []),
+            grounded_evidence=ml_only_result.get("evidence_summary", ""),
+            verification_method="ml_only",
+        )
+        _record_live_feed(feed_record)
+
         # Save to Firestore for live feed
         if firestore_service:
             try:
                 await firestore_service.save_verification(
-                    ml_prediction.upper(), text, request.url
+                    ml_prediction.upper(),
+                    text,
+                    request.url,
+                    confidence=feed_record["confidence"],
+                    red_flags=feed_record["red_flags"],
+                    grounded_evidence=feed_record["grounded_evidence"],
+                    verification_method=feed_record["verification_method"],
                 )
             except Exception as fs_err:
                 logger.warning(f"Firestore save failed: {fs_err}")
@@ -781,15 +943,21 @@ def verify_status():
 # =============================================================================
 
 @app.get("/live-feed")
-def live_feed():
-    """Return the most recent verified articles from Firestore."""
-    if not firestore_service:
-        raise HTTPException(
-            status_code=503,
-            detail="Firestore not configured. Add firebase_key.json."
-        )
-    try:
-        return firestore_service.get_live_feed()
-    except Exception as e:
-        logger.error(f"Live feed failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+def live_feed(limit: int = 50):
+    """Return the most recent verified articles (Firestore or local cache)."""
+    limit = max(1, min(limit, 200))
+
+    if firestore_service:
+        try:
+            return {
+                "articles": firestore_service.get_live_feed(limit=limit),
+                "source": "firestore",
+            }
+        except Exception as e:
+            logger.error(f"Live feed failed: {e}")
+
+    # Fallback: in-memory feed (works without Firestore)
+    return {
+        "articles": list(LOCAL_FEED)[:limit],
+        "source": "memory",
+    }

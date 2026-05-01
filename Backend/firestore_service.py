@@ -11,15 +11,19 @@ db = firestore.client()
 
 class FirestoreService:
     def __init__(self):
-        self.collection = db.collection("verified_articles")
+        # Must match frontend listener in use-live-feed.ts
+        self.collection = db.collection("verifications")
 
-    async def save_verification(self, verdict, text, url=None):
+    async def save_verification(self, verdict, text, url=None, **extra):
         data = {
             "verdict": verdict,
             "text": text,
             "url": url,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow(),
         }
+        # Optional fields used by dashboards (confidence, red_flags, evidence, etc.)
+        if extra:
+            data.update(extra)
         doc_ref = self.collection.document()
         doc_ref.set(data)
         return doc_ref.id
