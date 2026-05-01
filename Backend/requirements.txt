@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+scikit-learn
+pandas
+numpy
+scipy
+joblib
+python-multipart
+google-genai>=1.0.0
+google-api-python-client>=2.100.0
+python-dotenv>=1.0.1
+firebase-admin>=6.0.0
+wikipedia>=1.4.0
+requests>=2.31.0
+httpx>=0.27.0
+feedparser>=6.0.0

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Veritas AI - Live Verification Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#197fe6",
+                        "primary-content": "#ffffff",
+                        "primary-dark": "#1565c0",
+                        "primary-light": "#4dabf5",
+                        
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111a22",
+                        "surface-dark": "#1a2632",
+                        "surface-darker": "#15202b",
+                        
+                        "success": "#10b981",
+                        "warning": "#f59e0b",
+                        "error": "#ef4444",
+                    },
+                    fontFamily: {
+                        display: ["Space Grotesk", "sans-serif"],
+                        body: ["Space Grotesk", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .gauge-bg {
+            fill: none;
+            stroke: #2d3e50;
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+        .gauge-value {
+            fill: none;
+            stroke: #197fe6;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 251; /* Circumference of half circle r=80 approx */
+            stroke-dashoffset: 251;
+            transition: stroke-dashoffset 1s ease-out;
+            animation: loadGauge 1.5s ease-out forwards;
+        }
+        @keyframes loadGauge {
+            to {
+                stroke-dashoffset: 35; /* Represents roughly 87% */
+            }
+        }
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(25, 127, 230, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex overflow-hidden selection:bg-primary selection:text-white">
+<!-- Sidebar Navigation -->
+<aside class="w-64 flex-shrink-0 bg-surface-darker border-r border-slate-800 flex flex-col justify-between p-4 hidden lg:flex">
+<div class="flex flex-col gap-8">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-gradient-to-br from-primary to-blue-600 rounded-lg h-10 w-10 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white">verified_user</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold leading-none tracking-tight">Veritas AI</h1>
+<p class="text-slate-400 text-xs font-normal">Analyst Console v2.0</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 border border-primary/20 text-white shadow-sm transition-all group" href="#">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-dark text-slate-400 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">radar</span>
+<span class="text-sm font-medium">Live Feed</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-dark text-slate-400 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">history</span>
+<span class="text-sm font-medium">Verification History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-dark text-slate-400 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-dark text-slate-400 hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">api</span>
+<span class="text-sm font-medium">API Access</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Actions -->
+<div class="flex flex-col gap-4">
+<div class="p-4 rounded-xl bg-gradient-to-br from-surface-dark to-slate-900 border border-slate-800">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-symbols-outlined text-sm">bolt</span>
+<span class="text-xs font-bold uppercase tracking-wider">System Status</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+</span>
+<span class="text-xs text-slate-300">Engine Online</span>
+</div>
+</div>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-surface-dark text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="flex items-center gap-3 px-3 py-2 border-t border-slate-800 pt-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-8 w-8 ring-2 ring-surface-dark" data-alt="User profile photo showing a woman" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDTVe7Pd2wSdRlaYLn-gbgUbkRfks6ZgX7aYrTuodGmNe8w8KM1-qaKAOvkmxjUsb5q768YavfKj4pwynN8pFSX5fEZ1Q2OdFjSJFS6twqTeYtbcK58tPy4zsrEZ-4S8wdnpDYUOvMq5W4VYlkmQEmXFIov0I_iaCWpMszv9PiaNE01SfVPi1luEUkroVLvzFCkvRzajBRM5GZbr6v0q1HCIPK47eTk64xihnnzcaYipCc1frxnYFPUdLvJ9WOz4v0q1B2OFgAf5g');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-white">Sarah Jenkins</span>
+<span class="text-xs text-slate-500">Lead Analyst</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- Top Bar -->
+<header class="h-16 border-b border-slate-800 bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-6 z-10 shrink-0">
+<div class="flex items-center gap-4 lg:hidden">
+<button class="text-slate-400 hover:text-white"><span class="material-symbols-outlined">menu</span></button>
+<span class="text-white font-bold">Veritas AI</span>
+</div>
+<div class="hidden lg:flex items-center gap-2 text-slate-400 text-sm">
+<span>Dashboard</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-white">Live Verification</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden md:block">
+<input class="bg-surface-dark border-none rounded-full py-1.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary w-64 transition-all hover:bg-surface-darker" placeholder="Search archives..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1.5 text-slate-500 text-sm">search</span>
+</div>
+<div class="flex items-center gap-4 border-l border-slate-800 pl-6">
+<button class="relative text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 h-2 w-2 bg-primary rounded-full ring-2 ring-background-dark"></span>
+</button>
+<button class="text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Workspace -->
+<div class="flex-1 overflow-y-auto overflow-x-hidden flex flex-col lg:flex-row">
+<!-- Center Panel: Verification Input & Meter -->
+<div class="flex-1 p-6 lg:p-10 flex flex-col gap-8 max-w-5xl mx-auto w-full">
+<div class="text-center mb-4">
+<h2 class="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">Analyze Content Integrity</h2>
+<p class="text-slate-400">Paste a URL, social media post, or raw text to verify authenticity in real-time.</p>
+</div>
+<!-- Input Module -->
+<div class="bg-surface-dark rounded-2xl border border-slate-800 shadow-xl overflow-hidden neon-glow relative group">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<!-- Tabs -->
+<div class="flex border-b border-slate-800">
+<button class="flex-1 py-3 text-sm font-medium text-white bg-slate-800/50 border-b-2 border-primary flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-base">link</span> URL
+                        </button>
+<button class="flex-1 py-3 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/30 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-base">description</span> Text
+                        </button>
+<button class="flex-1 py-3 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/30 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-base">image</span> Image
+                        </button>
+</div>
+<div class="p-2">
+<div class="flex flex-col md:flex-row gap-2">
+<div class="relative flex-1">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-500">globe</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-4 bg-background-dark border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow text-base" placeholder="https://example.com/breaking-news-article" type="text" value="https://globalnews.com/article/market-crash-prediction-2024"/>
+</div>
+<button class="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg shadow-primary/25 flex items-center justify-center gap-2 min-w-[160px]">
+<span class="material-symbols-outlined animate-spin hidden">sync</span>
+<span>Verify Now</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Results Area Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+<!-- Truth Meter Card -->
+<div class="bg-surface-dark rounded-2xl border border-slate-800 p-6 flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute top-4 left-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-sm">speed</span>
+<span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Truth Probability</span>
+</div>
+<div class="relative w-64 h-32 mt-8 mb-4">
+<!-- Gauge SVG -->
+<svg class="w-full h-full" viewbox="0 0 200 100">
+<path class="gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+<path class="gauge-value stroke-primary" d="M 20 100 A 80 80 0 0 1 180 100"></path>
+</svg>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<span class="text-4xl font-bold text-white">87<span class="text-xl text-slate-400">%</span></span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-2 px-3 py-1 rounded-full bg-success/10 border border-success/20 text-success text-sm font-medium">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                            Likely Authentic
+                        </div>
+<p class="text-slate-400 text-xs mt-4 text-center max-w-xs">Score based on cross-referencing 42 trusted sources and semantic analysis.</p>
+</div>
+<!-- Key Indicators Summary -->
+<div class="bg-surface-dark rounded-2xl border border-slate-800 p-6 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-white font-bold text-lg">Quick Scan</h3>
+<button class="text-primary text-sm hover:underline">View Full Report</button>
+</div>
+<div class="space-y-4">
+<div class="group">
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-400">Fact Check Consensus</span>
+<span class="text-success font-bold">High Agreement</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-2">
+<div class="bg-success h-2 rounded-full" style="width: 92%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-400">Source Credibility</span>
+<span class="text-primary font-bold">A- Grade</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-400">Emotional Manipulation</span>
+<span class="text-warning font-bold">Detected</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-2">
+<div class="bg-warning h-2 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-800">
+<div class="flex gap-2">
+<span class="px-2 py-1 rounded bg-slate-800 text-xs text-slate-300 border border-slate-700">#finance</span>
+<span class="px-2 py-1 rounded bg-slate-800 text-xs text-slate-300 border border-slate-700">#economy</span>
+<span class="px-2 py-1 rounded bg-slate-800 text-xs text-slate-300 border border-slate-700">#market</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Live Disinformation Watch -->
+<div class="mt-4">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-error"></span>
+</span>
+<h3 class="text-white font-bold text-lg tracking-tight">Live Misinformation Feed</h3>
+</div>
+<div class="flex gap-2">
+<button class="h-8 w-8 flex items-center justify-center rounded-full bg-surface-dark border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded-full bg-surface-dark border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Feed Item 1 -->
+<div class="bg-surface-dark p-4 rounded-xl border border-slate-800 hover:border-slate-600 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-error/10 text-error border border-error/20">Debunked</span>
+<span class="text-xs text-slate-500">2m ago • Twitter</span>
+</div>
+<h4 class="text-white text-sm font-medium mb-2 group-hover:text-primary transition-colors">"New lunar colony project cancelled due to alien artifacts..."</h4>
+<div class="flex items-center gap-2 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">public</span>
+<span>Viral in: North America</span>
+</div>
+</div>
+<!-- Feed Item 2 -->
+<div class="bg-surface-dark p-4 rounded-xl border border-slate-800 hover:border-slate-600 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-warning/10 text-warning border border-warning/20">Reviewing</span>
+<span class="text-xs text-slate-500">5m ago • Telegram</span>
+</div>
+<h4 class="text-white text-sm font-medium mb-2 group-hover:text-primary transition-colors">"Central Bank announces immediate digital currency switch..."</h4>
+<div class="flex items-center gap-2 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">public</span>
+<span>Viral in: Europe</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: AI Analysis Insights (Collapsible on mobile) -->
+<aside class="w-full lg:w-80 border-l border-slate-800 bg-surface-darker/50 p-6 overflow-y-auto shrink-0">
+<div class="flex items-center gap-2 mb-6 text-primary">
+<span class="material-symbols-outlined">psychology</span>
+<h3 class="text-sm font-bold uppercase tracking-wider">Deep Analysis Insights</h3>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Insight Card 1 -->
+<div class="bg-surface-dark rounded-lg border border-slate-800 overflow-hidden">
+<button class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-sm">record_voice_over</span>
+</div>
+<span class="text-sm font-medium text-white">Loaded Language</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm">expand_more</span>
+</button>
+<div class="px-4 pb-4 pt-1">
+<p class="text-xs text-slate-400 mb-3">The text uses emotionally charged words to sway opinion rather than stating facts.</p>
+<div class="flex gap-2 flex-wrap">
+<span class="text-[10px] bg-error/10 text-error px-2 py-1 rounded border border-error/10">"Disastrous"</span>
+<span class="text-[10px] bg-error/10 text-error px-2 py-1 rounded border border-error/10">"Catastrophic"</span>
+</div>
+</div>
+</div>
+<!-- Insight Card 2 -->
+<div class="bg-surface-dark rounded-lg border border-slate-800 overflow-hidden">
+<button class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center text-success">
+<span class="material-symbols-outlined text-sm">fact_check</span>
+</div>
+<span class="text-sm font-medium text-white">Logical Fallacy</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm">expand_more</span>
+</button>
+<div class="px-4 pb-4 pt-1 border-t border-slate-800/50">
+<p class="text-xs text-slate-400 mb-2">No significant logical fallacies detected. The argument structure appears sound.</p>
+<div class="flex items-center gap-2 text-xs text-success">
+<span class="material-symbols-outlined text-sm">check</span>
+<span>Passed Check</span>
+</div>
+</div>
+</div>
+<!-- Insight Card 3 -->
+<div class="bg-surface-dark rounded-lg border border-slate-800 overflow-hidden">
+<button class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+<span class="material-symbols-outlined text-sm">travel_explore</span>
+</div>
+<span class="text-sm font-medium text-white">Source Reliability</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm">expand_less</span>
+</button>
+<div class="px-4 pb-4 pt-1 border-t border-slate-800/50">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs text-slate-400">Domain Authority</span>
+<span class="text-xs text-white font-bold">78/100</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-1.5 mb-3">
+<div class="bg-warning h-1.5 rounded-full" style="width: 78%"></div>
+</div>
+<p class="text-xs text-slate-400">The domain has a history of mixed factual reporting but generally high citations.</p>
+</div>
+</div>
+<!-- Insight Card 4 -->
+<div class="bg-surface-dark rounded-lg border border-slate-800 overflow-hidden">
+<button class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
+<span class="material-symbols-outlined text-sm">smart_toy</span>
+</div>
+<span class="text-sm font-medium text-white">AI Generation</span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-sm">expand_more</span>
+</button>
+</div>
+<!-- Promo / Upgrade -->
+<div class="mt-4 p-4 rounded-xl bg-gradient-to-b from-primary/20 to-surface-dark border border-primary/20 text-center">
+<div class="w-10 h-10 mx-auto bg-primary rounded-full flex items-center justify-center mb-3 text-white shadow-lg shadow-primary/40">
+<span class="material-symbols-outlined">rocket_launch</span>
+</div>
+<h4 class="text-white font-bold text-sm mb-1">Upgrade Model</h4>
+<p class="text-xs text-slate-400 mb-3">Get access to GPT-5 Analysis and DeepFake video detection.</p>
+<button class="w-full py-2 bg-white text-slate-900 text-xs font-bold rounded hover:bg-slate-200 transition-colors">View Plans</button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,12 @@
+# Frontend .dockerignore
+node_modules/
+.next/
+.git/
+.gitignore
+*.log
+npm-debug.log*
+.DS_Store
+.env*.local
+coverage/
+.vercel
+*.tsbuildinfo

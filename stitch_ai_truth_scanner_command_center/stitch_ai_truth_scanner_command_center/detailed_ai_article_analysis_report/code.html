@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TruthGuard AI - Analysis Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#197fe6",
+                        "primary-dark": "#1565c0",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#0f1115", // Deep charcoal as requested
+                        "surface-dark": "#1e2128",
+                        "accent-cyan": "#00e5ff",
+                        "accent-magenta": "#ff00e6",
+                        "risk-high": "#ef4444",
+                        "risk-med": "#f59e0b",
+                        "risk-low": "#10b981",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cyber look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e2128;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        /* Tooltip styles mimicking interactive state */
+        .group:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .highlight-red {
+            background-color: rgba(239, 68, 68, 0.2);
+            border-bottom: 2px solid #ef4444;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .highlight-red:hover {
+            background-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .highlight-yellow {
+            background-color: rgba(245, 158, 11, 0.2);
+            border-bottom: 2px solid #f59e0b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .highlight-yellow:hover {
+            background-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .highlight-blue {
+            background-color: rgba(25, 127, 230, 0.2);
+            border-bottom: 2px solid #197fe6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .highlight-blue:hover {
+            background-color: rgba(25, 127, 230, 0.3);
+        }
+
+        /* Spectrum Gradient */
+        .spectrum-gradient {
+            background: linear-gradient(90deg, #3b82f6 0%, #a855f7 50%, #ef4444 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col overflow-hidden">
+<!-- Navbar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-800 bg-surface-dark px-6 py-3 shrink-0 z-20">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-3xl">shield_lock</span>
+</div>
+<h2 class="text-white text-xl font-bold tracking-tight">TruthGuard AI</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-300 hover:text-white text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-white text-sm font-medium border-b-2 border-primary pb-0.5" href="#">Analysis</a>
+<a class="text-slate-300 hover:text-white text-sm font-medium transition-colors" href="#">History</a>
+<a class="text-slate-300 hover:text-white text-sm font-medium transition-colors" href="#">API Docs</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-lg">search</span>
+</span>
+<input class="bg-background-dark border border-slate-700 text-sm rounded-lg block w-64 pl-10 p-2.5 text-white focus:ring-primary focus:border-primary placeholder-slate-500" placeholder="Search report..." type="text"/>
+</div>
+<button class="bg-slate-700 hover:bg-slate-600 text-white rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined text-xl block">notifications</span>
+</button>
+<div class="size-9 rounded-full bg-gradient-to-tr from-primary to-accent-magenta p-[2px]">
+<img alt="User Profile" class="rounded-full h-full w-full object-cover border-2 border-surface-dark" data-alt="User profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-JOwnzwMACg0CB2Xj5mYpuIOjw4dWLo4rdRvYMHI_sWyNNOq6BnE9GOm5j3JowxTyJtqNkT9yQnD0HDHoyTRfU4pJpq-59jitIf_Sxi6cys5n4xVLwf70SMGyN5nXBjSCYKxoRvBANEgDE4S4lyb9etgctJJUqCNUIGdbOO-NQvAzEB3TMmAOeXdMe2-2QIz4zH-8nILb11_BAitdM7Vn2jigZAFYCTydvuNhNRzGQ3Q3q5TUgxE9seKHVdfa7nQZUy7m22544Q"/>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex flex-1 overflow-hidden h-full">
+<!-- Sidebar Navigation (Icons) -->
+<aside class="w-16 bg-surface-dark border-r border-slate-800 flex flex-col items-center py-6 gap-6 shrink-0 hidden sm:flex">
+<button class="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors tooltip-trigger relative group">
+<span class="material-symbols-outlined">description</span>
+<span class="absolute left-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">Full Report</span>
+</button>
+<button class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative group">
+<span class="material-symbols-outlined">analytics</span>
+<span class="absolute left-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">Metrics</span>
+</button>
+<button class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative group">
+<span class="material-symbols-outlined">hub</span>
+<span class="absolute left-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">Network</span>
+</button>
+<div class="flex-1"></div>
+<button class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</aside>
+<!-- Content Area -->
+<div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+<!-- Left Panel: Article Analysis -->
+<section class="flex-1 flex flex-col min-w-0 bg-background-dark overflow-y-auto custom-scrollbar relative">
+<!-- Report Header -->
+<div class="p-8 pb-4 border-b border-slate-800 bg-gradient-to-b from-surface-dark to-background-dark sticky top-0 z-10">
+<div class="flex flex-col gap-4">
+<div class="flex items-start justify-between gap-4">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3 text-sm text-slate-400">
+<span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-xs font-mono uppercase tracking-wide">Analysis #8492</span>
+<span>•</span>
+<span>October 24, 2023</span>
+<span>•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">public</span>
+                                        TechDaily
+                                    </span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-bold text-white leading-tight">
+                                    New Legislation Proposed for AI Regulation
+                                </h1>
+<p class="text-slate-400 text-lg max-w-3xl font-body font-light">
+                                    An in-depth look at the controversial bill introduced this morning regarding generative AI restrictions.
+                                </p>
+</div>
+<!-- Risk Badge -->
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="flex items-center gap-2 bg-risk-high/10 border border-risk-high/30 px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse">
+<span class="material-symbols-outlined text-risk-high animate-pulse">warning</span>
+<span class="text-risk-high font-bold tracking-wider uppercase text-sm">High Risk</span>
+</div>
+<span class="text-xs text-slate-500 font-mono">Confidence: 92%</span>
+</div>
+</div>
+<!-- Analysis Legend -->
+<div class="flex flex-wrap gap-4 mt-2">
+<div class="flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
+<span class="size-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]"></span>
+                                Biased Language (4)
+                            </div>
+<div class="flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
+<span class="size-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                                Logical Fallacies (2)
+                            </div>
+<div class="flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
+<span class="size-2 rounded-full bg-primary shadow-[0_0_8px_rgba(25,127,230,0.6)]"></span>
+                                Unverifiable Claims (3)
+                            </div>
+</div>
+</div>
+</div>
+<!-- Article Body -->
+<div class="p-8 max-w-4xl mx-auto w-full font-body text-slate-300 text-lg leading-relaxed space-y-6 pb-20">
+<p>
+                        The recently proposed "AI Safety Act" has sparked intense debate across Silicon Valley. Proponents argue it is a necessary step to curb the <span class="highlight-yellow group relative">
+                            unchecked and dangerous growth
+                            </span></p><div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-surface-dark border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-yellow-500 text-sm">warning</span>
+<span class="text-xs font-bold text-yellow-500 uppercase">Biased Language</span>
+</div>
+<p class="text-xs text-slate-300">"Unchecked and dangerous" uses emotionally charged language without providing statistical evidence of harm.</p>
+</div>
+ of artificial intelligence models.
+                    <p></p>
+<p>
+                        However, critics claim that this legislation is nothing more than <span class="highlight-red group relative">
+                            a government attempt to control free speech
+                            </span></p><div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-surface-dark border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-red-500 text-sm">psychology_alt</span>
+<span class="text-xs font-bold text-red-500 uppercase">Strawman Fallacy</span>
+</div>
+<p class="text-xs text-slate-300">Misrepresents the regulatory intent as "control of free speech" to make the opposing argument easier to attack.</p>
+</div>
+. If we allow the government to regulate code, they will inevitably start regulating what we think.
+                    <p></p>
+<div class="my-8 border-l-4 border-primary pl-6 py-2 italic text-slate-400 bg-slate-800/20 rounded-r-lg">
+                        "This bill is the single greatest threat to innovation since the invention of the internet." — Anonymous Tech CEO
+                    </div>
+<p>
+                        Sources inside the capitol have stated that <span class="highlight-blue group relative">
+                            95% of senators have not even read the bill
+                            </span></p><div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-surface-dark border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">fact_check</span>
+<span class="text-xs font-bold text-primary uppercase">Unverifiable Claim</span>
+</div>
+<p class="text-xs text-slate-300">This statistic lacks a verifiable source citation. Public records do not track reading completion of bills.</p>
+</div>
+ they are sponsoring. This highlights a fundamental disconnect between policymakers and technology.
+                    <p></p>
+<p>
+                        Furthermore, the economic impact could be devastating. Experts predict that <span class="highlight-blue group relative">
+                            millions of jobs will be lost immediately
+                            </span></p><div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-surface-dark border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-sm">fact_check</span>
+<span class="text-xs font-bold text-primary uppercase">Unverifiable Claim</span>
+</div>
+<p class="text-xs text-slate-300">Speculative statement presented as fact. Economic forecasts vary significantly.</p>
+</div>
+ if these regulations pass. It is clear that the only way to save the tech sector is to <span class="highlight-red group relative">
+                            reject this bill entirely
+                            <div class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-surface-dark border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-red-500 text-sm">psychology_alt</span>
+<span class="text-xs font-bold text-red-500 uppercase">False Dilemma</span>
+</div>
+<p class="text-xs text-slate-300">Presents only one solution (total rejection) when amendment or partial adoption are possible options.</p>
+</div>
+</span>.
+                    <p></p>
+</div>
+</section>
+<!-- Right Panel: Widgets & Insights -->
+<aside class="w-full lg:w-[400px] shrink-0 bg-surface-dark border-l border-slate-800 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-6">
+<h3 class="text-slate-400 font-bold uppercase tracking-wider text-xs mb-[-10px]">Analytics Dashboard</h3>
+<!-- Bias Spectrum Widget -->
+<div class="bg-background-dark rounded-xl p-5 border border-slate-700 shadow-lg">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-magenta">tune</span>
+<h4 class="text-white font-bold text-sm">Political Bias</h4>
+</div>
+<span class="text-xs font-mono text-accent-magenta bg-accent-magenta/10 px-2 py-1 rounded">Right-Center</span>
+</div>
+<div class="relative h-12 w-full mt-2">
+<!-- Spectrum Bar -->
+<div class="absolute top-1/2 -translate-y-1/2 w-full h-2 rounded-full spectrum-gradient opacity-80"></div>
+<!-- Labels -->
+<div class="flex justify-between w-full text-[10px] text-slate-500 font-mono mt-4 pt-2">
+<span>FAR LEFT</span>
+<span>CENTER</span>
+<span>FAR RIGHT</span>
+</div>
+<!-- Indicator -->
+<div class="absolute top-1/2 -translate-y-1/2 w-1 h-6 bg-white border border-slate-900 shadow-[0_0_10px_rgba(255,255,255,0.5)] z-10" style="left: 70%;">
+<div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded border border-slate-600 whitespace-nowrap">
+                                Score: +4.2
+                            </div>
+</div>
+</div>
+<p class="text-xs text-slate-400 mt-4 leading-relaxed">
+                        The article exhibits a slight skew towards libertarian/conservative viewpoints, emphasizing deregulation and individual liberty over collective security.
+                    </p>
+</div>
+<!-- Source Reputation -->
+<div class="bg-background-dark rounded-xl p-5 border border-slate-700 shadow-lg">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent-cyan">verified_user</span>
+<h4 class="text-white font-bold text-sm">Source Reputation</h4>
+</div>
+<a class="text-xs text-primary hover:text-primary-light" href="#">View History</a>
+</div>
+<div class="flex items-center gap-6 py-4">
+<!-- Circular Progress (CSS approximation) -->
+<div class="relative size-20 flex items-center justify-center">
+<svg class="transform -rotate-90 size-full">
+<circle class="text-slate-700" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-yellow-500" cx="40" cy="40" fill="transparent" r="36" stroke="currentColor" stroke-dasharray="226" stroke-dashoffset="81" stroke-width="8"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-xl font-bold text-white">64</span>
+<span class="text-[9px] text-slate-400 uppercase">Mixed</span>
+</div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-400">Factual Reporting</span>
+<span class="text-white">Medium</span>
+</div>
+<div class="w-full bg-slate-700 rounded-full h-1.5 mb-3">
+<div class="bg-yellow-500 h-1.5 rounded-full" style="width: 60%"></div>
+</div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-400">Credibility</span>
+<span class="text-white">High</span>
+</div>
+<div class="w-full bg-slate-700 rounded-full h-1.5">
+<div class="bg-accent-cyan h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+<p class="text-xs text-slate-400 italic border-l-2 border-slate-600 pl-3">
+                        "TechDaily has a history of sensationalizing headlines related to policy, though technical reporting remains accurate."
+                    </p>
+</div>
+<!-- Fact Checks -->
+<div class="bg-background-dark rounded-xl p-5 border border-slate-700 shadow-lg flex-1 min-h-[300px]">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">fact_check</span>
+<h4 class="text-white font-bold text-sm">Fact-Check References</h4>
+</div>
+<div class="space-y-3">
+<!-- Card 1 -->
+<a class="block bg-surface-dark hover:bg-slate-800 transition-colors rounded-lg p-3 border border-slate-700 group" href="#">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<div class="size-5 rounded bg-blue-900 flex items-center justify-center text-[10px] font-bold text-white">S</div>
+<span class="text-xs font-bold text-slate-300">Snopes</span>
+</div>
+<span class="text-[10px] font-bold bg-risk-high/20 text-risk-high px-2 py-0.5 rounded border border-risk-high/20 uppercase">False</span>
+</div>
+<p class="text-xs text-slate-300 group-hover:text-white transition-colors">
+                                "Did 95% of senators admit to not reading the AI Safety Act?"
+                            </p>
+</a>
+<!-- Card 2 -->
+<a class="block bg-surface-dark hover:bg-slate-800 transition-colors rounded-lg p-3 border border-slate-700 group" href="#">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<div class="size-5 rounded bg-orange-900 flex items-center justify-center text-[10px] font-bold text-white">R</div>
+<span class="text-xs font-bold text-slate-300">Reuters</span>
+</div>
+<span class="text-[10px] font-bold bg-risk-low/20 text-risk-low px-2 py-0.5 rounded border border-risk-low/20 uppercase">True</span>
+</div>
+<p class="text-xs text-slate-300 group-hover:text-white transition-colors">
+                                "Economic impact of AI regulation varies by sector."
+                            </p>
+</a>
+<!-- Card 3 -->
+<a class="block bg-surface-dark hover:bg-slate-800 transition-colors rounded-lg p-3 border border-slate-700 group" href="#">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<div class="size-5 rounded bg-slate-700 flex items-center justify-center text-[10px] font-bold text-white">P</div>
+<span class="text-xs font-bold text-slate-300">PolitiFact</span>
+</div>
+<span class="text-[10px] font-bold bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20 uppercase">Misleading</span>
+</div>
+<p class="text-xs text-slate-300 group-hover:text-white transition-colors">
+                                "Context missing regarding the definition of 'free speech' in code."
+                            </p>
+</a>
+</div>
+<button class="w-full mt-4 py-2 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors flex items-center justify-center gap-2">
+<span>Load More References</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<!-- Action Footer -->
+<div class="mt-auto pt-4 border-t border-slate-800">
+<button class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]">
+<span class="material-symbols-outlined">restart_alt</span>
+                        Re-Analyze Article
+                    </button>
+</div>
+</aside>
+</div>
+</main>
+</body></html>
