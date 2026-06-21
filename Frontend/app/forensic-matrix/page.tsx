@@ -2,16 +2,17 @@
 
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
+import { getStandardizedVerdict, getFriendlySourceName, capDisplayConfidence } from "@/lib/verification-display";
 
 export default function ForensicMatrixPage() {
     const { articles, loading } = useLiveFeed();
     const latest = articles[0];
 
-    const confidence = latest ? Math.round((latest.confidence || 0.874) * 100) : 0;
+    const confidence = latest && latest.confidence !== undefined ? capDisplayConfidence(latest.confidence * 100) : 0;
     const dashOffset = 283 - (283 * confidence) / 100;
-    const isFake = latest && ["FAKE", "FALSE", "MISLEADING"].includes((latest.verdict || "").toUpperCase());
-    const oriScore = isFake ? 12 : 78;
-    const manipulationIndex = isFake ? 82 : 24;
+    const isFake = latest && getStandardizedVerdict(latest.verdict) === "FAKE";
+    const oriScore = "N/A";
+    const manipulationIndex = "N/A";
 
     return (
         <div className="flex h-screen bg-bg-dark text-slate-100 font-display overflow-hidden">
@@ -61,7 +62,7 @@ export default function ForensicMatrixPage() {
                             </div>
                             <div>
                                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">Nodes Analyzed</p>
-                                <p className="text-xl font-mono text-white">{articles.length * 1015}</p>
+                                <p className="text-xl font-mono text-white">N/A</p>
                             </div>
                         </div>
                     </div>
@@ -93,8 +94,8 @@ export default function ForensicMatrixPage() {
                                     />
                                 </div>
                                 <div className="absolute top-8 flex flex-col items-center">
-                                    <span className="text-2xl font-bold text-white">{oriScore}/100</span>
-                                    <span className={`text-[10px] font-bold uppercase ${isFake ? "text-risk-high" : "text-risk-low"}`}>
+                                    <span className="text-2xl font-bold text-white">{oriScore}</span>
+                                    <span className={`text-[10px] font-bold uppercase text-slate-500`}>
                                         {isFake ? "Critical Risk" : "Low Risk"}
                                     </span>
                                 </div>
@@ -103,7 +104,7 @@ export default function ForensicMatrixPage() {
                             {/* WHOIS Data */}
                             <div className="grid grid-cols-1 gap-2 mt-auto">
                                 {[
-                                    { label: "Source", value: latest?.url ? new URL(latest.url).hostname : "Unknown" },
+                                    { label: "Source", value: getFriendlySourceName(latest?.url || "") },
                                     { label: "Verdict", value: latest?.verdict || "Pending" },
                                     { label: "Method", value: latest?.verification_method || "AI" },
                                 ].map((d) => (
@@ -143,7 +144,7 @@ export default function ForensicMatrixPage() {
                                 </svg>
                                 <div className="absolute flex flex-col items-center justify-center">
                                     <span className="text-6xl font-bold text-white tracking-tighter drop-shadow-lg">
-                                        {(confidence * 1.04).toFixed(1)}<span className="text-2xl text-accent-cyan">%</span>
+                                        {confidence}<span className="text-2xl text-accent-cyan">%</span>
                                     </span>
                                     <div className="flex items-center gap-2 mt-2 px-3 py-1 bg-accent-cyan/20 rounded-full border border-accent-cyan/40">
                                         <span className="size-2 bg-accent-cyan rounded-full animate-pulse" />
@@ -156,15 +157,15 @@ export default function ForensicMatrixPage() {
                             <div className="grid grid-cols-3 gap-4 w-full mt-8 z-10">
                                 <div className="text-center border-r border-slate-700">
                                     <p className="text-[10px] text-slate-500 uppercase">Prior Probability</p>
-                                    <p className="text-lg font-mono text-white">{(confidence * 0.52).toFixed(1)}%</p>
+                                    <p className="text-lg font-mono text-white">N/A</p>
                                 </div>
                                 <div className="text-center border-r border-slate-700">
                                     <p className="text-[10px] text-slate-500 uppercase">Likelihood Ratio</p>
-                                    <p className="text-lg font-mono text-accent-cyan">{(confidence / 7).toFixed(1)}x</p>
+                                    <p className="text-lg font-mono text-accent-cyan">N/A</p>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-[10px] text-slate-500 uppercase">Err Margin</p>
-                                    <p className="text-lg font-mono text-white">±{(100 - confidence) / 10 < 5 ? (100 - confidence) / 10 : 4.2}%</p>
+                                    <p className="text-lg font-mono text-white">N/A</p>
                                 </div>
                             </div>
                         </div>
@@ -181,20 +182,20 @@ export default function ForensicMatrixPage() {
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
                                     <span className="text-slate-400">Manipulation Index</span>
-                                    <span className={`font-bold ${manipulationIndex > 60 ? "text-risk-high" : "text-risk-low"}`}>
-                                        {manipulationIndex > 60 ? "High" : "Low"} ({manipulationIndex}/100)
+                                    <span className={`font-bold text-slate-500`}>
+                                        N/A
                                     </span>
                                 </div>
                                 <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-gradient-to-r from-risk-med to-risk-high transition-all"
-                                        style={{ width: `${manipulationIndex}%` }}
+                                        style={{ width: `0%` }}
                                     />
                                 </div>
                             </div>
                             {/* Word Cloud */}
                             <div className="flex-1 bg-slate-800/30 rounded border border-slate-700/50 p-4 relative overflow-hidden flex flex-wrap content-center justify-center gap-2">
-                                {(latest?.red_flags || ["MISLEADING", "bias", "CRISIS", "unverified", "SECRET", "claim", "manipulation", "leak"]).map((word: string, i: number) => (
+                                {(latest?.red_flags?.length ? latest.red_flags : ["No data available"]).map((word: string, i: number) => (
                                     <span
                                         key={i}
                                         className={`${i % 3 === 0 ? "text-risk-high text-lg font-bold" : i % 3 === 1 ? "text-risk-med text-sm font-semibold" : "text-slate-400 text-xs"} ${i % 5 === 0 ? "rotate-[-5deg]" : i % 5 === 2 ? "rotate-[3deg]" : ""}`}
@@ -305,7 +306,7 @@ export default function ForensicMatrixPage() {
                                 <div className="absolute right-0 text-[9px] text-slate-400 bg-surface-darker px-1 rounded">Bias</div>
                             </div>
                             <div className="text-center mt-auto">
-                                <p className="text-xs text-slate-400">Moral Outrage Score: <span className="text-white font-bold">{isFake ? "9" : "3"}/10</span></p>
+                                <p className="text-xs text-slate-400">Moral Outrage Score: <span className="text-slate-500 font-bold">N/A</span></p>
                             </div>
                         </div>
                     </div>

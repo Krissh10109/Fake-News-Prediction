@@ -2,6 +2,7 @@
 
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
+import { capDisplayConfidence, getStandardizedVerdict } from "@/lib/verification-display";
 
 export default function LiveDashboardPage() {
     const { articles, loading } = useLiveFeed();
@@ -9,12 +10,12 @@ export default function LiveDashboardPage() {
 
     // Compute stats
     const totalVerified = articles.length;
-    const fakeCount = articles.filter((a: any) => ["FAKE", "FALSE", "PANTS ON FIRE", "MISLEADING"].includes((a.verdict || "").toUpperCase())).length;
-    const realCount = articles.filter((a: any) => ["REAL", "TRUE", "MOSTLY TRUE", "VERIFIED"].includes((a.verdict || "").toUpperCase())).length;
+    const fakeCount = articles.filter((a: any) => getStandardizedVerdict(a.verdict) === "FAKE").length;
+    const realCount = articles.filter((a: any) => getStandardizedVerdict(a.verdict) === "REAL").length;
     const reviewCount = totalVerified - fakeCount - realCount;
 
     // Confidence for gauge
-    const confidence = latest ? Math.round((latest.confidence || 0.72) * 100) : 0;
+    const confidence = latest && latest.confidence !== undefined ? capDisplayConfidence(latest.confidence * 100) : 0;
     const dashOffset = 283 - (283 * confidence) / 100;
 
     return (
@@ -164,8 +165,8 @@ export default function LiveDashboardPage() {
                                 ) : (
                                     <div className="space-y-4 max-h-[500px] overflow-y-auto logs-scroll pr-2">
                                         {articles.slice(0, 15).map((article: any, idx: number) => {
-                                            const isFake = ["FAKE", "FALSE", "MISLEADING", "PANTS ON FIRE"].includes((article.verdict || "").toUpperCase());
-                                            const isReal = ["REAL", "TRUE", "MOSTLY TRUE", "VERIFIED"].includes((article.verdict || "").toUpperCase());
+                                            const isFake = getStandardizedVerdict(article.verdict) === "FAKE";
+                                            const isReal = getStandardizedVerdict(article.verdict) === "REAL";
                                             return (
                                                 <div
                                                     key={article.id || idx}

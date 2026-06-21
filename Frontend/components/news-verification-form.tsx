@@ -15,6 +15,8 @@ export default function NewsVerificationForm() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults] = useState<PredictResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // E7: frontend timer — purely for display, does not affect verification
+  const [elapsedMs, setElapsedMs] = useState<number | undefined>(undefined)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,10 +29,14 @@ export default function NewsVerificationForm() {
     setIsAnalyzing(true)
     setError(null)
     setResults(null)
+    setElapsedMs(undefined)
 
+    const startTime = Date.now()
     const response = await analyzeNews(newsText)
+    const elapsed = Date.now() - startTime
 
     if (response.success && response.data) {
+      setElapsedMs(elapsed)
       setResults(response.data)
     } else {
       setError(response.error || "An error occurred during analysis")
@@ -43,6 +49,7 @@ export default function NewsVerificationForm() {
     setNewsText("")
     setResults(null)
     setError(null)
+    setElapsedMs(undefined)
   }
 
   return (
@@ -136,7 +143,7 @@ export default function NewsVerificationForm() {
       )}
 
       {/* Unified Results Display */}
-      {results && <ResultsDisplay results={results} />}
+      {results && <ResultsDisplay results={results} elapsedMs={elapsedMs} />}
     </div>
   )
 }

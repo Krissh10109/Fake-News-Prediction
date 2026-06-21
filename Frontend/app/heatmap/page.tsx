@@ -2,26 +2,27 @@
 
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
+import { getStandardizedVerdict, getFriendlySourceName } from "@/lib/verification-display";
 
 export default function HeatmapPage() {
     const { articles, loading } = useLiveFeed();
 
     const fakeArticles = articles.filter((a: any) =>
-        ["FAKE", "FALSE", "MISLEADING", "PANTS ON FIRE"].includes((a.verdict || "").toUpperCase())
+        getStandardizedVerdict(a.verdict) === "FAKE"
     );
     const totalFlagged = fakeArticles.length;
 
     // Build severity-ranked narratives from live data
     const narratives = articles.slice(0, 4).map((a: any, i: number) => {
-        const isFake = ["FAKE", "FALSE", "MISLEADING"].includes((a.verdict || "").toUpperCase());
-        const severity = i === 0 ? "Critical" : i === 1 ? "High" : i === 2 ? "Moderate" : "Low";
+        const isFake = getStandardizedVerdict(a.verdict) === "FAKE";
+        const severity = isFake ? "High" : "Low";
         const colorMap: Record<string, string> = {
             Critical: "accent-pink",
             High: "accent-yellow",
             Moderate: "accent-cyan",
             Low: "slate-500",
         };
-        const velocity = Math.max(10, 900 - i * 250 + Math.floor(Math.random() * 50));
+        const velocity = "N/A";
         const width = `${Math.max(15, 85 - i * 20)}%`;
         return { ...a, severity, color: colorMap[severity], velocity, width, isFake };
     });
@@ -78,7 +79,7 @@ export default function HeatmapPage() {
                                     <div className="flex justify-between items-end">
                                         <span className="text-xs text-slate-400">Velocity</span>
                                         <span className="text-xs font-mono font-bold" style={{ color: n.color === "accent-pink" ? "#ff0055" : n.color === "accent-yellow" ? "#f2c94c" : "#0dccf2" }}>
-                                            {n.velocity}/min
+                                            {n.velocity}
                                         </span>
                                     </div>
                                     <div className="w-full bg-slate-700/50 h-1 rounded-full overflow-hidden">
@@ -190,19 +191,7 @@ export default function HeatmapPage() {
                             </div>
                         </div>
                         <div className="w-full space-y-3">
-                            {[
-                                { label: "X (Twitter)", pct: "45%", color: "#0dccf2" },
-                                { label: "Telegram", pct: "30%", color: "#f2c94c" },
-                                { label: "Facebook", pct: "25%", color: "#ff0055" },
-                            ].map((p) => (
-                                <div key={p.label} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: p.color, boxShadow: `0 0 8px ${p.color}80` }} />
-                                        <span className="text-slate-300">{p.label}</span>
-                                    </div>
-                                    <span className="font-mono font-bold" style={{ color: p.color }}>{p.pct}</span>
-                                </div>
-                            ))}
+                            <div className="text-center text-sm text-slate-500 py-4">Data unavailable</div>
                         </div>
                     </div>
 
@@ -215,7 +204,7 @@ export default function HeatmapPage() {
                             {articles.slice(0, 5).map((a: any, i: number) => (
                                 <div key={i} className={`p-3 rounded bg-white/5 border border-white/5 text-xs ${i > 2 ? "opacity-60" : ""}`}>
                                     <div className="flex justify-between mb-1">
-                                        <span className="text-[#0dccf2] font-bold">{a.url ? new URL(a.url).hostname.slice(0, 15) : `Source_${i}`}</span>
+                                        <span className="text-[#0dccf2] font-bold">{getFriendlySourceName(a.url).slice(0, 15)}</span>
                                         <span className="text-slate-500 font-mono">{a.timestamp?.toDate?.()?.toLocaleTimeString?.()?.slice(0, 5) || "now"}</span>
                                     </div>
                                     <p className="text-slate-300 mb-2 truncate">{(a.text || "").slice(0, 60)}</p>

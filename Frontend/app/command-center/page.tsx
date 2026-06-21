@@ -2,14 +2,15 @@
 
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
+import { capDisplayConfidence, getStandardizedVerdict, getFriendlySourceName } from "@/lib/verification-display";
 
 export default function CommandCenterPage() {
     const { articles, loading } = useLiveFeed();
     const latest = articles[0];
 
-    const confidence = latest ? Math.round((latest.confidence || 0.84) * 100) : 0;
+    const confidence = latest && latest.confidence !== undefined ? capDisplayConfidence(latest.confidence * 100) : 0;
     const dashOffset = 283 - (283 * confidence) / 100;
-    const isFake = latest && ["FAKE", "FALSE", "MISLEADING"].includes((latest.verdict || "").toUpperCase());
+    const isFake = latest && getStandardizedVerdict(latest.verdict) === "FAKE";
 
     return (
         <div className="flex h-screen bg-bg-dark text-slate-100 font-display overflow-hidden">
@@ -146,17 +147,17 @@ export default function CommandCenterPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {articles.slice(0, 4).map((a: any, i: number) => {
-                                        const domain = a.url ? new URL(a.url).hostname.replace("www.", "") : `source-${i + 1}`;
+                                        const domain = getFriendlySourceName(a.url);
                                         return (
                                             <div key={i} className="group flex items-start gap-4 p-4 rounded-lg bg-surface-dark/30 hover:bg-surface-dark/50 border border-transparent hover:border-stitch-primary/50 transition-all cursor-pointer">
                                                 <div className="size-10 rounded bg-white flex items-center justify-center shrink-0">
-                                                    <span className="text-black font-serif font-black text-xl">{domain[0]?.toUpperCase()}</span>
+                                                    <span className="text-black font-serif font-black text-xl">{domain[0]?.toUpperCase() || "?"}</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-start">
                                                         <h4 className="text-white font-bold truncate text-sm">{domain}</h4>
                                                         <span className={`text-xs font-bold ${a.verdict === "REAL" ? "text-green-400" : "text-yellow-400"}`}>
-                                                            {Math.round((a.confidence || 0.8) * 100)}% Trust
+                                                            {a.confidence !== undefined ? capDisplayConfidence(a.confidence * 100) : "N/A"}% Trust
                                                         </span>
                                                     </div>
                                                     <p className="text-slate-400 text-sm line-clamp-2 mt-1">{(a.text || "").slice(0, 80)}</p>

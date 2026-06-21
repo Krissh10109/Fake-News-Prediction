@@ -3,14 +3,15 @@
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
 import { useState } from "react";
+import { getStandardizedVerdict, capDisplayConfidence, getFriendlySourceName } from "@/lib/verification-display";
 
 export default function AnalysisReportPage() {
     const { articles, loading } = useLiveFeed();
     const [selectedIdx, setSelectedIdx] = useState(0);
     const selected = articles[selectedIdx];
 
-    const isFake = selected && ["FAKE", "FALSE", "MISLEADING", "PANTS ON FIRE"].includes((selected.verdict || "").toUpperCase());
-    const confidence = selected ? Math.round((selected.confidence || 0.72) * 100) : 0;
+    const isFake = selected && getStandardizedVerdict(selected.verdict) === "FAKE";
+    const confidence = selected && selected.confidence !== undefined ? capDisplayConfidence(selected.confidence * 100) : 0;
     const redFlags = selected?.red_flags || [];
 
     return (
@@ -53,7 +54,7 @@ export default function AnalysisReportPage() {
                             )}
                             {articles.map((a: any, i: number) => {
                                 const isActive = i === selectedIdx;
-                                const aIsFake = ["FAKE", "FALSE", "MISLEADING"].includes((a.verdict || "").toUpperCase());
+                                const aIsFake = getStandardizedVerdict(a.verdict) === "FAKE";
                                 return (
                                     <button
                                         key={a.id || i}
@@ -104,7 +105,7 @@ export default function AnalysisReportPage() {
                                             <h2 className="text-xl font-bold text-white mb-2">{(selected.text || "").slice(0, 100)}</h2>
                                             {selected.url && (
                                                 <a href={selected.url} target="_blank" rel="noreferrer" className="text-accent-cyan text-sm hover:underline font-mono">
-                                                    {selected.url}
+                                                    {getFriendlySourceName(selected.url)}
                                                 </a>
                                             )}
                                         </div>
@@ -200,8 +201,8 @@ export default function AnalysisReportPage() {
                                             <div className="space-y-3">
                                                 {[
                                                     { label: "Fact-Check Score", value: `${confidence}%`, color: isFake ? "text-risk-high" : "text-risk-low" },
-                                                    { label: "Bias Rating", value: isFake ? "High Bias" : "Low Bias", color: isFake ? "text-risk-med" : "text-risk-low" },
-                                                    { label: "Historical Accuracy", value: isFake ? "32%" : "89%", color: isFake ? "text-risk-high" : "text-risk-low" },
+                                                    { label: "Bias Rating", value: "N/A", color: "text-slate-500" },
+                                                    { label: "Historical Accuracy", value: "N/A", color: "text-slate-500" },
                                                 ].map((item) => (
                                                     <div key={item.label} className="flex justify-between items-center p-3 bg-surface-dark/50 rounded border border-white/5">
                                                         <span className="text-xs text-slate-400">{item.label}</span>

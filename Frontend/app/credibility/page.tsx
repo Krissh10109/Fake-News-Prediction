@@ -3,6 +3,7 @@
 import DashboardNav from "@/components/dashboard-nav";
 import { useLiveFeed } from "@/hooks/use-live-feed";
 import { useMemo, useState } from "react";
+import { getStandardizedVerdict, getFriendlySourceName } from "@/lib/verification-display";
 
 interface SourceProfile {
     domain: string;
@@ -24,10 +25,7 @@ export default function CredibilityPage() {
     const sourceProfiles = useMemo(() => {
         const map: Record<string, SourceProfile> = {};
         articles.forEach((a: any) => {
-            let domain = "unknown-source";
-            try {
-                if (a.url) domain = new URL(a.url).hostname.replace("www.", "");
-            } catch { }
+            let domain = getFriendlySourceName(a.url);
 
             if (!map[domain]) {
                 map[domain] = { domain, articles: [], totalArticles: 0, fakeCount: 0, realCount: 0, trustScore: 0, avgConfidence: 0, verdicts: [] };
@@ -36,8 +34,8 @@ export default function CredibilityPage() {
             map[domain].totalArticles++;
             map[domain].verdicts.push(a.verdict || "PENDING");
 
-            const isFake = ["FAKE", "FALSE", "MISLEADING", "PANTS ON FIRE"].includes((a.verdict || "").toUpperCase());
-            const isReal = ["REAL", "TRUE", "MOSTLY TRUE", "VERIFIED"].includes((a.verdict || "").toUpperCase());
+            const isFake = getStandardizedVerdict(a.verdict) === "FAKE";
+            const isReal = getStandardizedVerdict(a.verdict) === "REAL";
             if (isFake) map[domain].fakeCount++;
             if (isReal) map[domain].realCount++;
             map[domain].avgConfidence += (a.confidence || 0.5);
@@ -262,23 +260,13 @@ export default function CredibilityPage() {
                                         <div className="flex flex-col items-center">
                                             {/* Political Spectrum Bar */}
                                             <div className="w-full mb-4">
-                                                <div className="h-3 w-full rounded-full bg-gradient-to-r from-blue-500 via-slate-400 to-red-500 relative">
-                                                    <div
-                                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-bg-dark shadow-lg transition-all"
-                                                        style={{ left: `${selectedProfile.trustScore >= 70 ? 48 : selectedProfile.fakeCount > 0 ? 30 : 65}%` }}
-                                                    />
-                                                </div>
-                                                <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                                                    <span>Left</span>
-                                                    <span>Center</span>
-                                                    <span>Right</span>
-                                                </div>
+                                                <div className="text-center text-sm text-slate-500 py-4">Insufficient Data</div>
                                             </div>
                                             <div className="space-y-2 w-full">
                                                 {[
-                                                    { label: "Emotional Loading", val: selectedProfile.fakeCount > 0 ? "High" : "Low" },
-                                                    { label: "Fact-based Reporting", val: selectedProfile.trustScore >= 70 ? "Strong" : "Weak" },
-                                                    { label: "Source Attribution", val: selectedProfile.realCount > 0 ? "Present" : "Missing" },
+                                                    { label: "Emotional Loading", val: "N/A" },
+                                                    { label: "Fact-based Reporting", val: "N/A" },
+                                                    { label: "Source Attribution", val: "N/A" },
                                                 ].map((item) => (
                                                     <div key={item.label} className="flex justify-between items-center p-2 bg-surface-dark/50 rounded border border-white/5">
                                                         <span className="text-xs text-slate-400">{item.label}</span>
@@ -300,7 +288,7 @@ export default function CredibilityPage() {
                                     </h3>
                                     <div className="space-y-3">
                                         {selectedProfile.articles.slice(0, 5).map((a: any, i: number) => {
-                                            const aFake = ["FAKE", "FALSE", "MISLEADING"].includes((a.verdict || "").toUpperCase());
+                                            const aFake = getStandardizedVerdict(a.verdict) === "FAKE";
                                             return (
                                                 <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-surface-dark/30 border border-white/5">
                                                     <span className={`material-symbols-outlined text-base mt-0.5 ${aFake ? "text-risk-high" : "text-risk-low"}`}>
